@@ -3,9 +3,11 @@ from conans import tools
 from conans.client.build.cppstd_flags import cppstd_flag
 from conans.model.version import Version
 
+import glob
 import os
 import sys
 import shutil
+import json
 
 # From from *1 (see below, b2 --show-libraries), also ordered following linkage order
 # see https://github.com/Kitware/CMake/blob/master/Modules/FindBoost.cmake to know the order
@@ -16,6 +18,424 @@ lib_list = ['math', 'wave', 'container', 'contract', 'exception', 'graph', 'iost
             'coroutine', 'fiber', 'context', 'timer', 'thread', 'chrono', 'date_time',
             'atomic', 'filesystem', 'system', 'graph_parallel', 'python',
             'stacktrace', 'test', 'type_erasure']
+
+
+BOOST_LM_PACKAGE_NAME = 'Boost'
+BOOST_LM_NAMESPACE = 'Boost'
+BOOST_LMP_FILENAME = 'boost.lmp'
+
+
+def boost_lm_name(name):
+    return '{}/{}'.format(BOOST_LM_NAMESPACE, name)
+
+
+def boost_lm_filename(name):
+    return 'boost-{}.lml'.format(name)
+
+
+boost_interdep = {
+    'accumulators': {
+        'uses': [],
+    },
+    'algorithm': {
+        'uses': [],
+    },
+    'align': {
+        'uses': [],
+    },
+    'any': {
+        'uses': [],
+    },
+    'array': {
+        'uses': [],
+    },
+    'asio': {
+        'uses': [
+            'coroutine',
+            'system',
+        ],
+        'special-uses': ['Sockets'],
+    },
+    'assert': {
+        'uses': [],
+    },
+    'assign': {
+        'uses': [],
+    },
+    'atomic': {
+        'uses': [],
+    },
+    'beast': {
+        'uses': [],
+    },
+    'bimap': {
+        'uses': [],
+    },
+    'bind': {
+        'uses': [],
+    },
+    'callable_traits': {
+        'uses': [],
+    },
+    'chrono': {
+        'uses': [],
+    },
+    'circular_buffer': {
+        'uses': [],
+    },
+    'compatibility': {
+        'uses': [],
+    },
+    'compute': {
+        'uses': [],
+    },
+    'concept_check': {
+        'uses': [],
+    },
+    'config': {
+        'uses': [],
+    },
+    'container': {
+        'uses': [],
+    },
+    'container_hash': {
+        'uses': [],
+    },
+    'context': {
+        'uses': [],
+    },
+    'contract': {
+        'uses': [],
+    },
+    'conversion': {
+        'uses': [],
+    },
+    'convert': {
+        'uses': [],
+    },
+    'core': {
+        'uses': [],
+    },
+    'coroutine': {
+        'uses': [],
+    },
+    'coroutine2': {
+        'uses': [],
+    },
+    'crc': {
+        'uses': [],
+    },
+    'date_time': {
+        'uses': [],
+    },
+    'detail': {
+        'uses': [],
+    },
+    'disjoin_sets': {
+        'uses': [],
+    },
+    'dll': {
+        'uses': [],
+    },
+    'dynamic_bitset': {
+        'uses': [],
+    },
+    'endian': {
+        'uses': [],
+    },
+    'exception': {
+        'uses': [],
+    },
+    'fiber': {
+        'uses': [],
+    },
+    'filesystem': {
+        'uses': [],
+    },
+    'flyweight': {
+        'uses': [],
+    },
+    'foreach': {
+        'uses': [],
+    },
+    'format': {
+        'uses': [],
+    },
+    'function': {
+        'uses': [],
+    },
+    'function_types': {
+        'uses': [],
+    },
+    'functional': {
+        'uses': [],
+    },'fusion': {
+        'uses': [],
+    },
+    'geometry': {
+        'uses': [],
+    },
+    'gil': {
+        'uses': [],
+    }, 'graph': {
+        'uses': [],
+    },
+    'graph_parallel': {
+        'uses': [],
+    },
+    'hana': {
+        'uses': [],
+    },
+    'heap': {
+        'uses': [],
+    },
+    'hof': {
+        'uses': [],
+    },
+    'icl': {
+        'uses': [],
+    },
+    'integer': {
+        'uses': [],
+    },
+    'interprocess': {
+        'uses': [],
+    },
+    'intrusive': {
+        'uses': [],
+    },
+    'io': {
+        'uses': [],
+    },
+    'iostreams': {
+        'uses': [],
+    },
+    'iterator': {
+        'uses': [],
+    },
+    'lambda': {
+        'uses': [],
+    },
+    'lexical_cast': {
+        'uses': [],
+    },
+    'local_function': {
+        'uses': [],
+    },
+    'locale': {
+        'uses': [],
+    },
+    'lockfree': {
+        'uses': [],
+    },
+    'log': {
+        'uses': [],
+    },
+    'logic': {
+        'uses': [],
+    },
+    'math': {
+        'uses': [],
+    },
+    'metaparse': {
+        'uses': [],
+    },
+    'move': {
+        'uses': [],
+    },
+    'mp11': {
+        'uses': [],
+    },
+    'mpi': {
+        'uses': [],
+    },
+    'mpl': {
+        'uses': [],
+    },
+    'msm': {
+        'uses': [],
+    },
+    'multi_array': {
+        'uses': [],
+    },
+    'multi_index': {
+        'uses': [],
+    },
+    'multiprecision': {
+        'uses': [],
+    },
+    'numeric_conversion': {
+        'uses': [],
+    },
+    'numeric_interval': {
+        'uses': [],
+    },
+    'numeric_odeint': {
+        'uses': [],
+    },
+    'numeric_ublas': {
+        'uses': [],
+    },
+    'optional': {
+        'uses': [],
+    },
+    'parameter': {
+        'uses': [],
+    },
+    'parameter_python': {
+        'uses': [],
+    },
+    'phoenix': {
+        'uses': [],
+    },
+    'poly_collection': {
+        'uses': [],
+    },
+    'polygon': {
+        'uses': [],
+    },
+    'pool': {
+        'uses': [],
+    },
+    'predef': {
+        'uses': [],
+    },
+    'preprocessor': {
+        'uses': [],
+    },
+    'process': {
+        'uses': [],
+    },
+    'program_options': {
+        'uses': [],
+    },
+    'property_map': {
+        'uses': [],
+    },
+    'property_tree': {
+        'uses': [],
+    },
+    'proto': {
+        'uses': [],
+    },
+    'ptr_container': {
+        'uses': [],
+    },
+    'python': {
+        'uses': [],
+    },
+    'qvm': {
+        'uses': [],
+    },
+    'random': {
+        'uses': [],
+    },
+    'range': {
+        'uses': [],
+    },
+    'ratio': {
+        'uses': [],
+    },
+    'rational': {
+        'uses': [],
+    },
+    'regex': {
+        'uses': [],
+    },
+    'safe_numerics': {
+        'uses': [],
+    },
+    'scope_exit': {
+        'uses': [],
+    },
+    'serialization': {
+        'uses': [],
+    },
+    'signals2': {
+        'uses': [],
+    },
+    'smart_ptr': {
+        'uses': [],
+    },
+    'sort': {
+        'uses': [],
+    },
+    'spirit': {
+        'uses': [],
+    },
+    'stacktrace': {
+        'uses': [],
+    },
+    'static_assert': {
+        'uses': [],
+    },
+    'system': {
+        'uses': [],
+    },
+    'test': {
+        'uses': [],
+    },
+    'thread': {
+        'uses': [],
+    },
+    'throw_exception': {
+        'uses': [],
+    },
+    'timer': {
+        'uses': [],
+    },
+    'tokenizer': {
+        'uses': [],
+    },
+    'tti': {
+        'uses': [],
+    },
+    'tuple': {
+        'uses': [],
+    },
+    'type_erasure': {
+        'uses': [],
+    },
+    'type_index': {
+        'uses': [],
+    },
+    'type_traits': {
+        'uses': [],
+    },
+    'typeof': {
+        'uses': [],
+    },
+    'units': {
+        'uses': [],
+    },
+    'unordered': {
+        'uses': [],
+    },
+    'utility': {
+        'uses': [],
+    },
+    'uuid': {
+        'uses': [],
+    },
+    'variant': {
+        'uses': [],
+    },
+    'vmd': {
+        'uses': [],
+    },
+    'wave': {
+        'uses': [],
+    },
+    'winapi': {
+        'uses': [],
+    },
+    'xpressive': {
+        'uses': [],
+    },
+    'yap': {
+        'uses': [],
+    },
+}
 
 
 class BoostConan(ConanFile):
@@ -445,6 +865,7 @@ class BoostConan(ConanFile):
             return
 
         self.renames_to_make_cmake_find_package_happy()
+        self.generate_libman_libraries()
 
     def renames_to_make_cmake_find_package_happy(self):
         if not self.options.skip_lib_rename:
@@ -463,6 +884,53 @@ class BoostConan(ConanFile):
                 if original != new and not os.path.exists(new):
                     self.output.info("Rename: %s => %s" % (original, new))
                     os.rename(original, new)
+
+    def generate_libman_libraries(self):
+        for libname in boost_interdep:
+            self._generate_libman_lib(libname)
+
+        # The head of the package file
+        lmp_lines = [
+            'Type: Package',
+            'Name: {}'.format(BOOST_LM_PACKAGE_NAME),
+            'Namespace: {}'.format(BOOST_LM_NAMESPACE),
+            '',
+        ]
+
+        # Add lines for each generated library file
+        lmp_lines += ['Library: {}'.format(boost_lm_filename(lib)) for lib in boost_interdep]
+
+        # Write the lmp file into the package
+        with open(os.path.join(self.package_folder, BOOST_LMP_FILENAME), 'w') as fd:
+            fd.write('\n'.join(lmp_lines))
+
+    def _generate_libman_lib(self, name):
+        depinfo = boost_interdep[name]
+        fname = boost_lm_filename(name)
+        lml_dir = self.package_folder
+        opath = os.path.join(lml_dir, fname)
+        lines = [
+            'Type: Library',
+            'Name: {}'.format(name),
+            'Include-Path: include/',
+        ]
+        # Find the linkable for the library
+        linkables = glob.glob(os.path.join(self.package_folder, 'lib/*boost_{}.*'.format(name)))
+        if len(linkables) > 1:
+            raise RuntimeError('More than one linkable candidate for "{}"'.format(name))
+        if linkables:
+            relpath = os.path.relpath(linkables[0], lml_dir)
+            lines.append('Path: {}'.format(relpath))
+
+        for use in depinfo['uses']:
+            assert use in boost_interdep, 'Bad package name ' + use
+            lines.append('Uses: {}'.format(boost_lm_name(use)))
+
+        for special in depinfo.get('special-uses', ()):
+            lines.append('Special-Uses: {}'.format(special))
+
+        with open(opath, 'w') as fd:
+            fd.write('\n'.join(lines))
 
     def package_info(self):
         gen_libs = tools.collect_libs(self)
@@ -518,3 +986,12 @@ class BoostConan(ConanFile):
                 self.cpp_info.libs.append("pthread")
 
         self.env_info.BOOST_ROOT = self.package_folder
+
+        self.user_info.libman = json.dumps({
+            'packages': [
+                {
+                    'name': BOOST_LM_PACKAGE_NAME,
+                    'path': BOOST_LMP_FILENAME,
+                },
+            ],
+        })
